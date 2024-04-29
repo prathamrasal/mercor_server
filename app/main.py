@@ -17,6 +17,13 @@ app.add_middleware(
 async def get_root():
     return {"Health": "OK"}
 
+@app.get("/test")
+async def checkOpenAI(message: str = "", thread_id: str = None):
+    openAi =  OpenAIService()
+    print(message, thread_id)
+    response = openAi.interact_bot(message=message, threadId=thread_id)
+    print(response)
+    return response
 
 #enables automated documentation
 @app.get("/redoc")
