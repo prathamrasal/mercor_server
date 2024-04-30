@@ -21,7 +21,6 @@ def run_thread(thread, assistant):
     run = client.beta.threads.runs.create_and_poll(thread_id=thread, assistant_id=assistant)
     if run.status == "completed":
         messages = client.beta.threads.messages.list(thread_id=thread)
-        print(messages)
     return messages
 
 
@@ -37,11 +36,11 @@ class OpenAIService:
             thread_id = client.beta.threads.create().id
         else:
             thread_id = threadId
-        print('ThreadId: ', thread_id)
+        # print('ThreadId: ', thread_id)
         thread_message = append_to_thread(thread_id, message)
         # print('Message: ', thread_message)
         messages = run_thread(thread_id, my_assistant.id)
-        print(messages.to_dict())
+        # print(messages.to_dict())
         messages_dict = messages.to_dict()
         response = messages_dict['data'][0]['content'][0]['text']['value']
         response = extract_dict_from_string(response)
@@ -49,7 +48,11 @@ class OpenAIService:
             "response": response,
             "thread_id": thread_id
         }
+    
+    def get_thread_messages(self, threadId:str):
+        messages = client.beta.threads.messages.list(thread_id=threadId)
+        return messages.to_dict()
 
-
-
-
+    def get_user_messages(self, threadId:str):
+        messages = client.beta.threads.messages.list(thread_id=threadId, role="user")
+        return messages.to_dict()
