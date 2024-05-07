@@ -1,13 +1,13 @@
-from fastapi import FastAPI
-from starlette.responses import RedirectResponse  # Correct import
+from fastapi import FastAPI, Depends
+from starlette.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.AppConfig import config
+from .routers import auth, threads
 from app.services.OpenAi import OpenAIService
-from app.services.EngineersQuery import EngineersQuery
-from app.services.Amplifier import Amplifier
-
 
 app = FastAPI(title=config.app_name)
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,42 +16,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include routers
+app.include_router(auth.router, prefix="/v1/api/auth")
+app.include_router(threads.router, prefix="/v1/api/threads")
 
-
+# Health check endpoint
 @app.get("/")
 async def get_root():
     return {"Health": "OK"}
 
+# Test endpoint for interacting with OpenAI
 @app.get("/test")
-async def checkOpenAI(message: str = "", thread_id: str = None):
-    openAi =  OpenAIService()
+async def check_openai(message: str = "", thread_id: str = None, openai_service: OpenAIService = Depends()):
     print(message, thread_id)
-    response = openAi.interact_bot(message=message, threadId=thread_id)
-    # print(response)
+    response = openai_service.interact_bot(message=message, threadId=thread_id)
     return response
 
-
-
-@app.get("/message")
-async def sendMessage(message: str = "", thread_id: str = None):
-    openAi =  OpenAIService()
-    print("CHECK 1",message, thread_id)
-    response = openAi.interact_bot(message=message, threadId=thread_id)
-    print("CHECK 2", response)
-    engineers = []
-    engineersDb = EngineersQuery()
-    if response:
-        amplifier = Amplifier()
-        ampQuery = amplifier.amplify(message, response["response"]["keywords"])
-        print("Amplified Query: ", ampQuery)
-        engineers = engineersDb.get_engineers(ampQuery, response["response"], mode="0")
-
-    engineersDetails = engineersDb.get_engineer_details(engineers)
-    return {"botResponse":response, "engineers": engineersDetails}
-
-
-#enables automated documentation
+# Endpoint for API documentation using ReDoc
 @app.get("/redoc")
 async def get_redoc():
     return RedirectResponse(url="/redoc")
-
